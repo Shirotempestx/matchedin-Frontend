@@ -1,0 +1,229 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+/* Shadcn v4 uses a different approach, usually it's already in the tailwind import or a separate layer */
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/figtree";
+
+/* In Tailwind v4, you don't need the three separate @tailwind directives. 
+   If you want to add custom CSS to layers, you do it like this: */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    /* ... your other shadcn variables ... */
+    --radius: 0.5rem;
+    --app-bg: #09090b;
+    --app-surface: #0f1014;
+    --app-text: #ffffff;
+    --app-muted: #94a3b8;
+    --app-border: rgba(255, 255, 255, 0.1);
+    --app-surface-soft: rgba(255, 255, 255, 0.03);
+    --app-surface-card: rgba(255, 255, 255, 0.02);
+    --app-input: rgba(255, 255, 255, 0.04);
+    --app-muted-strong: #64748b;
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --app-bg: #09090b;
+    --app-surface: #0f1014;
+    --app-text: #ffffff;
+    --app-muted: #94a3b8;
+    --app-border: rgba(255, 255, 255, 0.1);
+    --app-surface-soft: rgba(255, 255, 255, 0.03);
+    --app-surface-card: rgba(255, 255, 255, 0.02);
+    --app-input: rgba(255, 255, 255, 0.04);
+    --app-muted-strong: #64748b;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+    --app-bg: #f8fafc;
+    --app-surface: #ffffff;
+    --app-text: #0f172a;
+    --app-muted: #475569;
+    --app-border: rgba(15, 23, 42, 0.12);
+    --app-surface-soft: rgba(15, 23, 42, 0.04);
+    --app-surface-card: rgba(15, 23, 42, 0.02);
+    --app-input: rgba(15, 23, 42, 0.04);
+    --app-muted-strong: #334155;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    background: var(--app-bg);
+    color: var(--app-text);
+    transition:
+      background-color 220ms ease,
+      color 220ms ease;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 9999;
+    background:
+      radial-gradient(
+        circle at 80% 10%,
+        rgba(59, 130, 246, 0.2),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 20% 20%,
+        rgba(16, 185, 129, 0.18),
+        transparent 45%
+      );
+  }
+
+  html.theme-swap-glow body::before {
+    animation: theme-swap-flash 520ms ease;
+  }
+
+  * {
+    transition-property: background-color, border-color, color, fill, stroke;
+    transition-duration: 180ms;
+    transition-timing-function: ease;
+  }
+}
+
+@theme {
+  /* This is where you define your Figtree font for MatchedIn */
+  --font-sans: "Figtree Variable", ui-sans-serif, system-ui;
+}
+
+/* Custom variants in v4 are often handled automatically, 
+   but you can keep your custom logic if needed */
+@custom-variant dark (&:is(.dark *));
+
+@layer utilities {
+  .animate-timer-fast {
+    animation: timer-progress 7s linear forwards;
+  }
+  @keyframes timer-progress {
+    from {
+      width: 0%;
+    }
+    to {
+      width: 100%;
+    }
+  }
+  @keyframes theme-swap-flash {
+    0% {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+    35% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.02);
+    }
+  }
+
+  .app-page {
+    min-height: 100vh;
+    background-color: var(--app-bg);
+    color: var(--app-text);
+  }
+
+  .app-panel {
+    background-color: var(--app-surface);
+    border-color: var(--app-border);
+  }
+
+  .app-card {
+    background-color: var(--app-surface-card);
+    border-color: var(--app-border);
+  }
+
+  .app-soft {
+    background-color: var(--app-surface-soft);
+    border-color: var(--app-border);
+  }
+
+  .app-input {
+    background-color: var(--app-input);
+    border-color: var(--app-border);
+    color: var(--app-text);
+  }
+
+  .app-input::placeholder {
+    color: color-mix(in srgb, var(--app-muted) 70%, transparent);
+  }
+
+  .app-muted {
+    color: var(--app-muted);
+  }
+
+  .app-muted-strong {
+    color: var(--app-muted-strong);
+  }
+
+  .app-border {
+    border-color: var(--app-border);
+  }
+}
+
+@layer base {
+  .light [class*="bg-[#09090b]"] {
+    background-color: #f8fafc !important;
+  }
+
+  .light [class*="bg-[#0f1014]"] {
+    background-color: #ffffff !important;
+  }
+
+  .light [class*="text-white"] {
+    color: #0f172a !important;
+  }
+
+  .light [class*="text-slate-400"] {
+    color: #64748b !important;
+  }
+
+  .light [class*="text-slate-500"] {
+    color: #475569 !important;
+  }
+
+  .light [class*="border-white/5"],
+  .light [class*="border-white/10"],
+  .light [class*="border-white/20"] {
+    border-color: rgba(15, 23, 42, 0.14) !important;
+  }
+
+  .light [class*="bg-white/5"],
+  .light [class*="bg-white/10"],
+  .light [class*="bg-white/20"],
+  .light [class*="bg-white/[0.02]"],
+  .light [class*="bg-white/[0.03]"] {
+    background-color: rgba(15, 23, 42, 0.04) !important;
+  }
+
+  .light .bg-blue-600.text-white,
+  .light .bg-blue-500.text-white,
+  .light .bg-emerald-600.text-white,
+  .light .bg-red-600.text-white,
+  .light .bg-red-500.text-white,
+  .light .bg-amber-500.text-white {
+    color: #ffffff !important;
+  }
+
+  .light img {
+    filter: none;
+  }
+}
