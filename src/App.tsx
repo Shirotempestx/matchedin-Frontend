@@ -20,6 +20,7 @@ import MyApplications from "./pages/offres/MyApplications"
 import NotificationsPage from "./pages/notifications"
 import ExploreCandidates from "./pages/explore/ExploreCandidates"
 import ExploreStudents from "./pages/explore/ExploreStudents"
+import FollowedEnterprises from "./pages/explore/FollowedEnterprises"
 import FavoritesPage from "./pages/dashboard/FavoritesPage"
 import NotFound from "./pages/NotFound"
 import GlobalChatbot from "./components/GlobalChatbot"
@@ -124,6 +125,7 @@ const PublicRoutes = () => (
       <Route path="notifications" element={<NotificationsPage />} />
       <Route path="explore-candidates" element={<ExploreCandidates />} />
       <Route path="explore-students" element={<ExploreStudents />} />
+      <Route path="followed-enterprises" element={<FollowedEnterprises />} />
       <Route path="favorites" element={<FavoritesPage />} />
       <Route path="profile" element={<StudentProfilePage view="owner" />} />
       <Route path="students/:slug" element={<StudentProfilePage view="public" />} />

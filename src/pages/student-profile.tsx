@@ -15,7 +15,8 @@ import {
   Camera01Icon,
   Briefcase02Icon,
   Download04Icon,
-  FavouriteIcon
+  FavouriteIcon,
+  Building04Icon
 } from "hugeicons-react"
 import api from "@/lib/axios"
 import { useAuth } from "@/lib/auth"
@@ -569,10 +570,16 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
           {/* View toggle */}
           <div className="flex items-center gap-2 pb-1">
             {isOwner && (
-              <Link to={`/${routeLocale}/favorites`} className="h-10 px-4 rounded-xl border border-white/10 hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-400 text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center transition-all">
-                <FavouriteIcon size={14} className="mr-2" />
-                {isFr ? 'Mes Favoris' : 'My Favorites'}
-              </Link>
+              <>
+                <Link to={`/${routeLocale}/followed-enterprises`} className="h-10 px-4 rounded-xl border border-white/10 hover:border-indigo-500/40 hover:bg-indigo-500/10 hover:text-indigo-400 text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center transition-all">
+                  <Building04Icon size={14} className="mr-2" />
+                  {isFr ? 'Mes Suivis' : 'Following'}
+                </Link>
+                <Link to={`/${routeLocale}/favorites`} className="h-10 px-4 rounded-xl border border-white/10 hover:border-amber-500/40 hover:bg-amber-500/10 hover:text-amber-400 text-slate-300 text-[10px] font-black uppercase tracking-widest flex items-center transition-all">
+                  <FavouriteIcon size={14} className="mr-2" />
+                  {isFr ? 'Mes Favoris' : 'My Favorites'}
+                </Link>
+              </>
             )}
             {isOwner ? (
               <>

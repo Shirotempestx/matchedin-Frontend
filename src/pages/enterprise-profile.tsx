@@ -17,6 +17,7 @@ import {
 import api from "@/lib/axios"
 import { useAuth } from "@/lib/auth"
 import { normalizeLocale } from "@/i18n/config"
+import { useQueryClient } from "@tanstack/react-query"
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -107,6 +108,7 @@ const EMPTY_PROFILE: EnterpriseProfile = {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function EnterpriseProfilePage({ view = "owner" }: EnterpriseProfilePageProps) {
+  const queryClient = useQueryClient();
   const params = useParams()
   const navigate = useNavigate()
   const location = useLocation()
@@ -515,6 +517,7 @@ export default function EnterpriseProfilePage({ view = "owner" }: EnterpriseProf
                             ...prev,
                             followers_count: r.data.isFollowing ? prev.followers_count + 1 : prev.followers_count - 1
                           } : prev)
+                          queryClient.invalidateQueries({ queryKey: ['followedEnterprises'] })
                         })
                         .catch(() => {})
                         .finally(() => setFollowLoading(false))

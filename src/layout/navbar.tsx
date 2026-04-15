@@ -244,7 +244,7 @@ export default function Navbar() {
                 </Link>
               )}
 
-              <div className="relative group">
+                <div className="relative group">
                 <Link
                   to={user?.role === 'enterprise' || user?.role === 'Entreprise' ? withLocale('/enterprise-profile') : withLocale('/profile')}
                   className="text-white bg-white/10 hover:bg-white/20 px-3 md:px-4 py-2 rounded-xl text-[12px] font-bold uppercase tracking-tight transition-colors flex items-center gap-2 max-w-[170px] border border-white/10"
@@ -255,6 +255,15 @@ export default function Navbar() {
 
                 <div className="absolute right-0 top-full pt-2 opacity-0 invisible translate-y-1 group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-focus-within:opacity-100 group-focus-within:visible group-focus-within:translate-y-0 transition-all duration-150 z-50">
                   <div className="w-52 rounded-xl border border-white/10 bg-[#0f1014] shadow-2xl p-2 flex flex-col gap-1">
+                    {user?.role === 'student' && (
+                      <Link
+                        to={withLocale('/followed-enterprises')}
+                        className="w-full h-10 px-3 rounded-lg text-left border border-transparent hover:border-white/10 hover:bg-white/5 text-slate-300 hover:text-white text-[12px] font-black uppercase tracking-tight transition-all flex items-center gap-2"
+                      >
+                        <FavouriteIcon size={14} className="shrink-0" />
+                        <span>Entreprises Suivies</span>
+                      </Link>
+                    )}
                     <button
                       onClick={logout}
                       className="w-full h-10 px-3 rounded-lg text-left border border-transparent hover:border-red-500/40 hover:bg-red-500/10 text-slate-300 hover:text-red-300 text-[12px] font-black uppercase tracking-tight transition-all flex items-center gap-2"
