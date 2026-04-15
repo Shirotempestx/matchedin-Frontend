@@ -214,9 +214,6 @@ export default function EnterpriseProfilePage({ view = "owner" }: EnterpriseProf
   const activeProfile = profile ?? EMPTY_PROFILE
   const publicSlug = activeProfile.slug || publicHandle || "entreprise"
   const publicLink = `/${routeLocale}/enterprises/${encodeURIComponent(publicSlug)}`
-  const privateSpaceLink = user?.role === "student"
-    ? `/${routeLocale}/profile`
-    : `/${routeLocale}/enterprise-profile`
 
   async function handleSaveProfile() {
     if (!isOwner) return
