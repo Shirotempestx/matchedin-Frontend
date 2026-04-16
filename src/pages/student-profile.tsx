@@ -95,7 +95,7 @@ type StudentProfile = {
 function normalizeProfile(raw: unknown): StudentProfile {
   if (!raw || typeof raw !== "object") return EMPTY_PROFILE
 
-  const p = raw as Partial<StudentProfile>
+  const p = raw as Partial<StudentProfile> & { avatar_url?: string; banner_url?: string; avatar?: string; banner?: string }
   return {
     id: p.id,
     slug: p.slug,
@@ -115,8 +115,9 @@ function normalizeProfile(raw: unknown): StudentProfile {
     linkedinUrl: p.linkedinUrl,
     portfolioUrl: p.portfolioUrl,
     cvUrl: p.cvUrl,
-    avatarUrl: p.avatarUrl,
-    bannerUrl: p.bannerUrl,
+    // Handle both camelCase and snake_case from backend
+    avatarUrl: p.avatarUrl ?? p.avatar_url ?? p.avatar,
+    bannerUrl: p.bannerUrl ?? p.banner_url ?? p.banner,
     skills: Array.isArray(p.skills) ? p.skills : [],
     projects: Array.isArray(p.projects) ? p.projects : [],
     privateStats: p.privateStats,
@@ -212,7 +213,9 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
           : `/student-profiles/public/${encodeURIComponent(publicHandle)}`
         const res = await api.get(endpoint)
         if (!cancelled) {
+          console.log("📸 Profile API Response:", res.data?.data)
           const p = normalizeProfile(res.data?.data)
+          console.log("📸 Normalized Profile:", p)
           setProfile(p)
           if (!isOwner && (user?.role === "enterprise" || user?.role === "Entreprise") && p.id) {
             api.get(`/students/${p.id}/is-saved`).then(r => setIsSaved(r.data.isSaved)).catch(() => {})
