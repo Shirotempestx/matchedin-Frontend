@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion"
-import { useEffect, useMemo, useState, useRef, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react"
 import { Link, useNavigate, useParams, useLocation } from "react-router-dom"
 import {
   Mail01Icon,
@@ -130,6 +130,27 @@ const EMPTY_PROFILE: StudentProfile = {
   links: [], skills: [], projects: [],
 }
 
+function getApiRelativePathFromImageUrl(url: string): string {
+  const raw = url.trim()
+  if (!raw) return ""
+
+  if (!/^https?:\/\//i.test(raw)) {
+    return raw.startsWith("/") ? raw : `/${raw}`
+  }
+
+  try {
+    const parsed = new URL(raw)
+    const apiSegmentIndex = parsed.pathname.indexOf("/api/")
+    const extractedPath = apiSegmentIndex >= 0
+      ? parsed.pathname.slice(apiSegmentIndex + 4)
+      : parsed.pathname
+    const normalizedPath = extractedPath.startsWith("/") ? extractedPath : `/${extractedPath}`
+    return `${normalizedPath}${parsed.search}`
+  } catch {
+    return raw
+  }
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function StudentProfilePage({ view = "owner" }: StudentProfilePageProps) {
@@ -172,6 +193,12 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
   const [importLoading, setImportLoading] = useState(false)
   const [reviewData, setReviewData] = useState<GeneratedStudentProfileDraft | null>(null)
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [resolvedAvatarUrl, setResolvedAvatarUrl] = useState("")
+  const [resolvedBannerUrl, setResolvedBannerUrl] = useState("")
+  const [avatarAuthFallbackAttempted, setAvatarAuthFallbackAttempted] = useState(false)
+  const [bannerAuthFallbackAttempted, setBannerAuthFallbackAttempted] = useState(false)
+  const avatarBlobUrlRef = useRef<string | null>(null)
+  const bannerBlobUrlRef = useRef<string | null>(null)
 
   const isOwner = view === "owner"
   const routeLocale = normalizeLocale(location.pathname.split('/').filter(Boolean)[0] || localStorage.getItem('preferred_language') || 'fr')
@@ -213,9 +240,7 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
           : `/student-profiles/public/${encodeURIComponent(publicHandle)}`
         const res = await api.get(endpoint)
         if (!cancelled) {
-          console.log("📸 Profile API Response:", res.data?.data)
           const p = normalizeProfile(res.data?.data)
-          console.log("📸 Normalized Profile:", p)
           setProfile(p)
           if (!isOwner && (user?.role === "enterprise" || user?.role === "Entreprise") && p.id) {
             api.get(`/students/${p.id}/is-saved`).then(r => setIsSaved(r.data.isSaved)).catch(() => {})
@@ -263,6 +288,90 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
   const privateSpaceLink = (user?.role === "enterprise" || user?.role === "Entreprise")
     ? `/${routeLocale}/enterprise-profile`
     : `/${routeLocale}/profile`
+
+  const setAvatarBlobUrl = useCallback((blobUrl: string) => {
+    if (avatarBlobUrlRef.current) URL.revokeObjectURL(avatarBlobUrlRef.current)
+    avatarBlobUrlRef.current = blobUrl
+    setResolvedAvatarUrl(blobUrl)
+  }, [])
+
+  const setBannerBlobUrl = useCallback((blobUrl: string) => {
+    if (bannerBlobUrlRef.current) URL.revokeObjectURL(bannerBlobUrlRef.current)
+    bannerBlobUrlRef.current = blobUrl
+    setResolvedBannerUrl(blobUrl)
+  }, [])
+
+  const loadAuthenticatedImage = useCallback(async (sourceUrl: string, type: "avatar" | "banner") => {
+    const endpoint = getApiRelativePathFromImageUrl(sourceUrl)
+    if (!endpoint) return false
+
+    try {
+      const res = await api.get(endpoint, { responseType: "blob" })
+      if (!(res.data instanceof Blob) || !res.data.type.startsWith("image/")) return false
+
+      const blobUrl = URL.createObjectURL(res.data)
+      if (type === "avatar") setAvatarBlobUrl(blobUrl)
+      else setBannerBlobUrl(blobUrl)
+      return true
+    } catch {
+      return false
+    }
+  }, [setAvatarBlobUrl, setBannerBlobUrl])
+
+  useEffect(() => {
+    if (avatarBlobUrlRef.current) {
+      URL.revokeObjectURL(avatarBlobUrlRef.current)
+      avatarBlobUrlRef.current = null
+    }
+    if (bannerBlobUrlRef.current) {
+      URL.revokeObjectURL(bannerBlobUrlRef.current)
+      bannerBlobUrlRef.current = null
+    }
+
+    setResolvedAvatarUrl(activeProfile.avatarUrl ?? "")
+    setResolvedBannerUrl(activeProfile.bannerUrl ?? "")
+    setAvatarAuthFallbackAttempted(false)
+    setBannerAuthFallbackAttempted(false)
+  }, [activeProfile.avatarUrl, activeProfile.bannerUrl])
+
+  useEffect(() => {
+    return () => {
+      if (avatarBlobUrlRef.current) URL.revokeObjectURL(avatarBlobUrlRef.current)
+      if (bannerBlobUrlRef.current) URL.revokeObjectURL(bannerBlobUrlRef.current)
+    }
+  }, [])
+
+  const handleAvatarImageError = useCallback(() => {
+    if (!activeProfile.avatarUrl) {
+      setResolvedAvatarUrl("")
+      return
+    }
+    if (avatarAuthFallbackAttempted) {
+      setResolvedAvatarUrl("")
+      return
+    }
+
+    setAvatarAuthFallbackAttempted(true)
+    void loadAuthenticatedImage(activeProfile.avatarUrl, "avatar").then((ok) => {
+      if (!ok) setResolvedAvatarUrl("")
+    })
+  }, [activeProfile.avatarUrl, avatarAuthFallbackAttempted, loadAuthenticatedImage])
+
+  const handleBannerImageError = useCallback(() => {
+    if (!activeProfile.bannerUrl) {
+      setResolvedBannerUrl("")
+      return
+    }
+    if (bannerAuthFallbackAttempted) {
+      setResolvedBannerUrl("")
+      return
+    }
+
+    setBannerAuthFallbackAttempted(true)
+    void loadAuthenticatedImage(activeProfile.bannerUrl, "banner").then((ok) => {
+      if (!ok) setResolvedBannerUrl("")
+    })
+  }, [activeProfile.bannerUrl, bannerAuthFallbackAttempted, loadAuthenticatedImage])
 
   async function handleSaveProfile() {
     if (!isOwner) return
@@ -522,8 +631,8 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
     <main className="app-page pt-[72px] pb-20">
       {/* ── Banner ─────────────────────────────────────────── */}
       <div className="relative h-52 bg-gradient-to-br from-blue-900/40 via-slate-900 to-slate-950 overflow-hidden">
-        {activeProfile.bannerUrl && (
-          <img src={activeProfile.bannerUrl} alt="Banner" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        {resolvedBannerUrl && (
+          <img src={resolvedBannerUrl} alt="Banner" onError={handleBannerImageError} className="absolute inset-0 w-full h-full object-cover opacity-60" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#09090b] via-transparent to-transparent" />
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff04_1px,transparent_1px),linear-gradient(to_bottom,#ffffff04_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -545,8 +654,8 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
             {/* Avatar */}
             <div className="relative shrink-0">
               <div className="w-28 h-28 rounded-3xl border-4 border-[#09090b] bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-2xl overflow-hidden">
-                {activeProfile.avatarUrl ? (
-                  <img src={activeProfile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                {resolvedAvatarUrl ? (
+                  <img src={resolvedAvatarUrl} alt="Avatar" onError={handleAvatarImageError} className="w-full h-full object-cover" />
                 ) : (
                   <span className="text-3xl font-black text-white tracking-tighter">{avatarInitials}</span>
                 )}
