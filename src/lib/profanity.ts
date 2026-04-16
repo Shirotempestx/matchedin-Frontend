@@ -1,5 +1,5 @@
 const ENGLISH_BAD_WORDS = [
-  'fuck', 'fucking', 'fucker', 'fuckers', 'motherfucker', 'motherfucking', 'wtf',
+  'fuck', 'fucking', "tfo", 'fucker', 'fuckers', 'motherfucker', 'motherfucking', 'wtf',
   'shit', 'shitty', 'shithead', 'shitheads', 'bullshit', 'crap', 'piss', 'pissed',
   'bitch', 'bitches', 'sonofabitch', 'bastard', 'bastards', 'asshole', 'assholes',
   'dumbass', 'jackass', 'badass', 'moron', 'idiot', 'idiotic', 'stupid', 'stupidity',
