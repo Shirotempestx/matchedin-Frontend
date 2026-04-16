@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createChatSession, sendMessage } from "@/lib/gemini";
 import { detectBadWords } from "@/lib/profanity";
-import type { ChatSession } from "@google/generative-ai";
 
 interface Message {
   id: string;
@@ -62,7 +61,7 @@ export default function ChatBot({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [chatSession, setChatSession] = useState<ChatSession | null>(null);
+  const [chatSession, setChatSession] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -328,11 +327,10 @@ export default function ChatBot({
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[82%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed ${
-                      msg.role === "user"
-                        ? `${accent.bg} text-white rounded-br-md`
-                        : "bg-white/[0.05] text-slate-200 border border-white/5 rounded-bl-md"
-                    }`}
+                    className={`max-w-[82%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed ${msg.role === "user"
+                      ? `${accent.bg} text-white rounded-br-md`
+                      : "bg-white/[0.05] text-slate-200 border border-white/5 rounded-bl-md"
+                      }`}
                   >
                     {renderContent(msg.content)}
                   </div>
@@ -384,11 +382,10 @@ export default function ChatBot({
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isLoading}
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
-                    input.trim() && !isLoading
-                      ? `${accent.bg} ${accent.bgHover} text-white shadow-lg ${accent.glow}`
-                      : "bg-white/5 text-slate-600 cursor-not-allowed"
-                  }`}
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${input.trim() && !isLoading
+                    ? `${accent.bg} ${accent.bgHover} text-white shadow-lg ${accent.glow}`
+                    : "bg-white/5 text-slate-600 cursor-not-allowed"
+                    }`}
                 >
                   <svg
                     className="w-4 h-4"

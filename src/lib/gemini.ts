@@ -1,17 +1,25 @@
 import { GoogleGenerativeAI, type ChatSession } from '@google/generative-ai';
+import api from './axios';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash';
+const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL || 'gemini-1.5-flash';
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND_CHAT_API === 'true';
 
-if (!API_KEY) {
-    console.warn('VITE_GEMINI_API_KEY is not configured. Chatbot AI calls will fail until configured.');
+if (!API_KEY && !USE_BACKEND) {
+    console.warn('VITE_GEMINI_API_KEY is not configured and VITE_USE_BACKEND_CHAT_API is false. Chatbot AI calls will fail.');
 }
 
-const genAI = new GoogleGenerativeAI(API_KEY);
+const genAI = API_KEY ? new GoogleGenerativeAI(API_KEY) : null;
 
-export function createChatSession(systemPrompt: string): ChatSession {
-    if (!API_KEY) {
-        throw new Error('Gemini API key is missing. Configure VITE_GEMINI_API_KEY in FrontEnd environment.');
+export function createChatSession(systemPrompt: string): ChatSession | any {
+    if (USE_BACKEND) {
+        // When using backend, we don't need a local session object from the SDK
+        // We just return a stateful object that sendMessage can use
+        return { systemPrompt, isBackend: true };
+    }
+
+    if (!API_KEY || !genAI) {
+        throw new Error('Gemini API key is missing. Configure VITE_GEMINI_API_KEY in FrontEnd environment or enable VITE_USE_BACKEND_CHAT_API.');
     }
 
     const model = genAI.getGenerativeModel({
@@ -30,13 +38,22 @@ export function createChatSession(systemPrompt: string): ChatSession {
     return chat;
 }
 
-export async function sendMessage(chat: ChatSession, message: string): Promise<string> {
+export async function sendMessage(chat: ChatSession | any, message: string): Promise<string> {
     try {
-        const result = await chat.sendMessage(message);
+        if (chat?.isBackend) {
+            const res = await api.post('/chatbot', {
+                message,
+                system_prompt: chat.systemPrompt
+            });
+            return res.data.response;
+        }
+
+        const result = await (chat as ChatSession).sendMessage(message);
         const response = result.response;
         return response.text();
     } catch (error: any) {
         console.error('Gemini API error:', error);
-        throw new Error(error?.message || 'Erreur de communication avec l\'assistant IA.');
+        const message_error = error?.response?.data?.message || (error?.message || 'Erreur de communication avec l\'assistant IA.');
+        throw new Error(message_error);
     }
 }
