@@ -2,8 +2,17 @@
 import axios from 'axios';
 import type { AxiosInstance } from 'axios';
 
+function normalizeApiBaseUrl(url: string): string {
+    const trimmed = url.replace(/\/+$/, '');
+    return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
+}
+
+const apiBaseUrl = normalizeApiBaseUrl(
+    import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+);
+
 const api: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:8000/api',
+    baseURL: apiBaseUrl,
     headers: {
         'X-Requested-With': 'XMLHttpRequest',
         'Accept': 'application/json',

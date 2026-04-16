@@ -16,6 +16,7 @@ import {
 } from "hugeicons-react"
 import api from "@/lib/axios"
 import { useAuth } from "@/lib/auth"
+import { detectBadWordsInFields } from "@/lib/profanity"
 import { normalizeLocale } from "@/i18n/config"
 import { useQueryClient } from "@tanstack/react-query"
 
@@ -217,6 +218,13 @@ export default function EnterpriseProfilePage({ view = "owner" }: EnterpriseProf
 
   async function handleSaveProfile() {
     if (!isOwner) return
+
+    const profanityResult = detectBadWordsInFields(editForm as unknown as Record<string, unknown>, ["company_name", "industry", "country", "description"])
+    if (profanityResult.hasBadWord) {
+      setError(isFr ? "Veuillez retirer les mots injurieux de votre texte." : "Please remove offensive words from your text.")
+      return
+    }
+
     setSaving(true)
     setError("")
     setNotice("")

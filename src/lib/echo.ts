@@ -8,8 +8,17 @@ import Pusher from 'pusher-js';
 
 let echoInstance: Echo<'reverb'> | null = null;
 
+function normalizeBackendBaseUrl(url: string): string {
+    const trimmed = url.replace(/\/+$/, '');
+    return trimmed.endsWith('/api') ? trimmed.slice(0, -4) : trimmed;
+}
+
 export function getEcho(): Echo<'reverb'> {
     if (echoInstance) return echoInstance;
+
+    const backendBaseUrl = normalizeBackendBaseUrl(
+        import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+    );
 
     echoInstance = new Echo({
         broadcaster: 'reverb',
@@ -19,7 +28,7 @@ export function getEcho(): Echo<'reverb'> {
         wssPort: import.meta.env.VITE_REVERB_PORT ?? 8080,
         forceTLS: false,
         enabledTransports: ['ws'],
-        authEndpoint: 'http://localhost:8000/broadcasting/auth',
+        authEndpoint: `${backendBaseUrl}/broadcasting/auth`,
         auth: {
             headers: {
                 Authorization: `Bearer ${localStorage.getItem('token')}`,

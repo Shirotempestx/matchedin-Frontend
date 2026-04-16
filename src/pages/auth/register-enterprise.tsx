@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
+import { hasBadWord } from "@/lib/profanity";
 import { z } from "zod";
 import { normalizeLocale } from "@/i18n/config";
 import { useTranslation } from "react-i18next";
@@ -45,14 +46,20 @@ export default function RegisterEnterprise() {
     });
 
     const step1Schema = z.object({
-        company_name: z.string().min(2, t("auth.validation.companyNameTooShort")),
-        industry: z.string().min(2, t("auth.validation.industryRequired")),
+        company_name: z.string()
+            .min(2, t("auth.validation.companyNameTooShort"))
+            .refine((value) => !hasBadWord(value), t("auth.validation.badWordDetected")),
+        industry: z.string()
+            .min(2, t("auth.validation.industryRequired"))
+            .refine((value) => !hasBadWord(value), t("auth.validation.badWordDetected")),
         website: z.string().url(t("auth.validation.websiteInvalid")).or(z.literal('')),
         company_size: z.string(),
     });
 
     const step2Schema = z.object({
-        name: z.string().min(2, t("auth.validation.nameTooShort")),
+        name: z.string()
+            .min(2, t("auth.validation.nameTooShort"))
+            .refine((value) => !hasBadWord(value), t("auth.validation.badWordDetected")),
         email: z.string().email(t("auth.validation.invalidEmail")),
         password: z.string().min(8, t("auth.validation.passwordMin")),
         password_confirmation: z.string().min(8, t("auth.validation.passwordMin")),

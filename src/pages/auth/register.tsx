@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
+import { hasBadWord } from "@/lib/profanity";
 import { z } from "zod";
 import { normalizeLocale } from "@/i18n/config";
 import { useTranslation } from "react-i18next";
@@ -51,7 +52,9 @@ export default function RegisterPage() {
   });
 
   const step1Schema = z.object({
-    name: z.string().min(2, t("auth.validation.fullNameTooShort")),
+    name: z.string()
+      .min(2, t("auth.validation.fullNameTooShort"))
+      .refine((value) => !hasBadWord(value), t("auth.validation.badWordDetected")),
     email: z.string().email(t("auth.validation.invalidEmail")),
     password: z.string().min(8, t("auth.validation.passwordMin")),
     password_confirmation: z.string().min(8, t("auth.validation.passwordMin")),

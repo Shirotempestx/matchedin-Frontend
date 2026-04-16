@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { createChatSession, sendMessage } from "@/lib/gemini";
+import { detectBadWords } from "@/lib/profanity";
 import type { ChatSession } from "@google/generative-ai";
 
 interface Message {
@@ -116,6 +117,18 @@ export default function ChatBot({
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || isLoading || !chatSession) return;
+
+    const profanityResult = detectBadWords(trimmed);
+    if (profanityResult.hasBadWord) {
+      const warningMsg: Message = {
+        id: `warn-${Date.now()}`,
+        role: "bot",
+        content: "⚠️ Merci d'utiliser un langage respectueux.",
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, warningMsg]);
+      return;
+    }
 
     const userMsg: Message = {
       id: `user-${Date.now()}`,

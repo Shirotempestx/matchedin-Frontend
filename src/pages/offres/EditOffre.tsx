@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/lib/auth';
 import api from '@/lib/axios';
+import { detectBadWordsInFields } from '@/lib/profanity';
 import { useTranslation } from 'react-i18next';
 import { normalizeLocale } from '@/i18n/config';
 import {
@@ -94,8 +95,15 @@ export default function EditOffre() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setSubmitting(true);
         setError('');
+
+        const profanityResult = detectBadWordsInFields(formData as unknown as Record<string, unknown>, ['title', 'description', 'location', 'niveau_etude']);
+        if (profanityResult.hasBadWord) {
+            setError(isFr ? 'Veuillez retirer les mots injurieux de votre texte.' : 'Please remove offensive words from your text.');
+            return;
+        }
+
+        setSubmitting(true);
 
         try {
             const payload = {

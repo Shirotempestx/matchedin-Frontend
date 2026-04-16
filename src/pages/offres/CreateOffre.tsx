@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/axios';
 import { useAuth } from '@/lib/auth';
 import { useAlert } from '@/components/alerts/useAlert';
+import { hasBadWord } from '@/lib/profanity';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { normalizeLocale } from '@/i18n/config';
@@ -15,9 +16,9 @@ import {
 import SkillSelector from '@/components/shared/SkillSelector';
 
 const offreSchema = z.object({
-    title: z.string().min(3, "validation_title_min"),
-    description: z.string().min(20, "validation_description_min"),
-    location: z.string().optional(),
+    title: z.string().min(3, "validation_title_min").refine((value) => !hasBadWord(value), "validation_bad_word"),
+    description: z.string().min(20, "validation_description_min").refine((value) => !hasBadWord(value), "validation_bad_word"),
+    location: z.string().optional().refine((value) => !value || !hasBadWord(value), "validation_bad_word"),
     work_mode: z.enum(['Remote', 'Hybrid', 'On-site']),
     salary_min: z.string().optional(),
     salary_max: z.string().optional(),
@@ -29,7 +30,7 @@ const offreSchema = z.object({
     start_date: z.string().optional(),
     end_date: z.string().optional(),
     internship_period: z.string().optional(),
-    niveau_etude: z.string().optional(),
+    niveau_etude: z.string().optional().refine((value) => !value || !hasBadWord(value), "validation_bad_word"),
     places_demanded: z.string().min(1, "validation_places_demanded"),
 });
 
@@ -128,6 +129,7 @@ export default function CreateOffre() {
                 const code = e.issues[0].message;
                 if (code === 'validation_title_min') setError(isFr ? 'Le titre doit contenir au moins 3 caracteres.' : 'Title must be at least 3 characters.');
                 else if (code === 'validation_description_min') setError(isFr ? 'La description doit contenir au moins 20 caracteres.' : 'Description must be at least 20 characters.');
+                else if (code === 'validation_bad_word') setError(isFr ? 'Veuillez retirer les mots injurieux de votre texte.' : 'Please remove offensive words from your text.');
                 else setError(code);
             }
             return;

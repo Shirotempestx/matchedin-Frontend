@@ -20,6 +20,7 @@ import {
 } from "hugeicons-react"
 import api from "@/lib/axios"
 import { useAuth } from "@/lib/auth"
+import { detectBadWordsInFields } from "@/lib/profanity"
 import CompetenceSelector, { type Skill } from "./auth/selectorRegister"
 import { normalizeLocale } from "@/i18n/config"
 import { isImportPipelineStudentProfileResponse, mapStudentProfileImportResponseToDraft, type GeneratedStudentProfileDraft } from "@/features/importPipeline/allocation"
@@ -262,6 +263,13 @@ export default function StudentProfilePage({ view = "owner" }: StudentProfilePag
 
   async function handleSaveProfile() {
     if (!isOwner) return
+
+    const profanityResult = detectBadWordsInFields(editForm as unknown as Record<string, unknown>, ["name", "headline", "city", "bio", "availability"])
+    if (profanityResult.hasBadWord) {
+      setError(isFr ? "Veuillez retirer les mots injurieux de votre texte." : "Please remove offensive words from your text.")
+      return
+    }
+
     setSaving(true)
     setError("")
     setNotice("")

@@ -81,6 +81,7 @@
       "fullNameTooShort": "Le nom complet est trop court.",
       "invalidEmail": "Adresse email invalide.",
       "passwordMin": "Le mot de passe doit contenir au moins 8 caracteres.",
+      "badWordDetected": "Veuillez retirer les mots injurieux de votre texte.",
       "selectWorkMode": "Veuillez selectionner un format de travail.",
       "companyNameTooShort": "Le nom de l'entreprise est trop court.",
       "industryRequired": "Le secteur d'activite est requis.",

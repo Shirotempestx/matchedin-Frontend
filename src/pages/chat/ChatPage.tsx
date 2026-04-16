@@ -13,6 +13,7 @@ import api from '@/lib/axios';
 import { useAuth } from '@/lib/auth';
 import { getEcho } from '@/lib/echo';
 import { normalizeLocale } from '@/i18n/config';
+import { detectBadWords } from '@/lib/profanity';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -78,6 +79,7 @@ export default function ChatPage() {
 
     // ── Input state ──
     const [messageInput, setMessageInput] = useState('');
+    const [inputError, setInputError] = useState('');
     const [sending, setSending] = useState(false);
     const [editingMessage, setEditingMessage] = useState<MessageData | null>(null);
 
@@ -314,20 +316,29 @@ export default function ChatPage() {
 
     // ── Send message ──
     const handleSend = async () => {
-        if (!messageInput.trim() || !activeConversationId || sending) return;
+        const trimmedMessage = messageInput.trim();
+        if (!trimmedMessage || !activeConversationId || sending) return;
+
+        const profanityResult = detectBadWords(trimmedMessage);
+        if (profanityResult.hasBadWord) {
+            setInputError(isFr ? 'Veuillez retirer les mots injurieux de votre message.' : 'Please remove offensive words from your message.');
+            return;
+        }
+
+        setInputError('');
         setSending(true);
 
         try {
             if (editingMessage) {
                 // Edit mode
-                const res = await api.put(`/messages/${editingMessage.id}`, { body: messageInput.trim() });
+                const res = await api.put(`/messages/${editingMessage.id}`, { body: trimmedMessage });
                 const updatedMsg = res.data.message;
                 setMessages(prev => prev.map(m => m.id === updatedMsg.id ? { ...m, ...updatedMsg } : m));
                 setEditingMessage(null);
             } else {
                 // New message
                 const res = await api.post(`/conversations/${activeConversationId}/messages`, {
-                    body: messageInput.trim(),
+                    body: trimmedMessage,
                 });
                 const newMsg = res.data.message;
                 setMessages(prev => {
@@ -769,11 +780,19 @@ export default function ChatPage() {
                                         )}
                                     </AnimatePresence>
 
+                                    {!!inputError && (
+                                        <p className="mb-2 px-1 text-[11px] font-semibold text-red-400">{inputError}</p>
+                                    )}
+
                                     <div className="flex items-end gap-3">
                                         <textarea
                                             ref={inputRef}
                                             value={messageInput}
-                                            onChange={e => { setMessageInput(e.target.value); emitTyping(); }}
+                                            onChange={e => {
+                                                setMessageInput(e.target.value);
+                                                if (inputError) setInputError('');
+                                                emitTyping();
+                                            }}
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter' && !e.shiftKey) {
                                                     e.preventDefault();
