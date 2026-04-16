@@ -10,7 +10,8 @@ import { normalizeLocale } from '@/i18n/config';
 import {
     Briefcase02Icon, Location01Icon, MoneyBag02Icon,
     Calendar03Icon, Building04Icon, ArrowLeft01Icon,
-    Tick01Icon, InformationCircleIcon, Tag01Icon, Target01Icon
+    Tick01Icon, InformationCircleIcon, Tag01Icon, Target01Icon,
+    FavouriteIcon
 } from 'hugeicons-react';
 
 interface Offre {
@@ -108,6 +109,35 @@ export default function OffreDetail() {
         }
     });
 
+    const { data: favorites = [] } = useQuery<any[]>({
+        queryKey: ['favorites'],
+        queryFn: async () => {
+            const res = await api.get('/favorites');
+            return res.data;
+        },
+        enabled: isAuthenticated && user?.role === 'student',
+    });
+
+    const isFavorited = favorites.some((f: any) => f.id === parseInt(id!));
+
+    const toggleFavoriteMutation = useMutation({
+        mutationFn: async () => {
+            const res = await api.post(`/favorites/${id}`);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['favorites'] });
+        },
+    });
+
+    const handleToggleFavorite = () => {
+        if (!isAuthenticated) {
+            navigate(withLocale('/login'));
+            return;
+        }
+        toggleFavoriteMutation.mutate();
+    };
+
     const handleApply = () => {
         if (!isAuthenticated) {
             navigate(withLocale('/login'));
@@ -179,10 +209,10 @@ export default function OffreDetail() {
                                 </h1>
                                 {offre.match_percentage !== undefined && (
                                     <div className={`px-4 py-2 rounded-2xl border flex items-center gap-2 text-xs font-black uppercase tracking-widest w-fit shrink-0 ${offre.match_percentage >= 80
-                                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
-                                            : offre.match_percentage >= 50
-                                                ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-                                                : 'bg-red-500/10 text-red-500 border-red-500/20'
+                                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                                        : offre.match_percentage >= 50
+                                            ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+                                            : 'bg-red-500/10 text-red-500 border-red-500/20'
                                         }`}>
                                         <Target01Icon size={16} />
                                         {offre.match_percentage}% MATCH
@@ -330,12 +360,23 @@ export default function OffreDetail() {
                                         <span className="text-[10px] font-black uppercase tracking-[0.2em]">{locale === 'fr' ? 'Mode Recruteur' : 'Recruiter Mode'}</span>
                                     </div>
                                 ) : (
-                                    <button
-                                        onClick={handleApply}
-                                        className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 group-hover:scale-[1.02] active:scale-[0.98]"
-                                    >
-                                        <span className="text-[11px] font-black uppercase tracking-[0.2em]">{locale === 'fr' ? 'Postuler Maintenant' : 'Apply Now'}</span>
-                                    </button>
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={handleApply}
+                                            className="flex-1 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-500/20 group-hover:scale-[1.02] active:scale-[0.98]"
+                                        >
+                                            <span className="text-[11px] font-black uppercase tracking-[0.2em]">{locale === 'fr' ? 'Postuler Maintenant' : 'Apply Now'}</span>
+                                        </button>
+                                        <button
+                                            onClick={handleToggleFavorite}
+                                            className={`w-16 h-full py-5 rounded-2xl border flex items-center justify-center transition-all ${isFavorited
+                                                ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                                                : 'bg-white/5 border-white/10 text-slate-500 hover:text-red-500 hover:border-red-500/30'
+                                                }`}
+                                        >
+                                            <FavouriteIcon size={20} />
+                                        </button>
+                                    </div>
                                 )}
                             </div>
                         </div>

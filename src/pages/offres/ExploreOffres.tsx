@@ -7,8 +7,10 @@ import { normalizeLocale } from '@/i18n/config';
 import {
     Search01Icon, Location01Icon, Briefcase02Icon,
     ArrowRight01Icon, Building04Icon, MoneyBag02Icon, FilterIcon,
-    ArrowLeft01Icon, Target01Icon
+    ArrowLeft01Icon, Target01Icon, FavouriteIcon
 } from 'hugeicons-react';
+import { useAuth } from '@/lib/auth';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 
 
 interface Offre {
@@ -29,7 +31,7 @@ interface Offre {
         category: string;
     }[];
 
-   // skills_required: Array<string | { id: number; level?: number; name?: string }> | null;
+    // skills_required: Array<string | { id: number; level?: number; name?: string }> | null;
     // skills_details?: Array<{ id: number; name?: string }>;
 
     created_at: string;
@@ -75,6 +77,38 @@ export default function ExploreOffres() {
     const [data, setData] = useState<PaginatedResponse | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isError, setIsError] = useState(false);
+    const { isAuthenticated, user } = useAuth();
+    const queryClient = useQueryClient();
+
+    const { data: favorites = [] } = useQuery<any[]>({
+        queryKey: ['favorites'],
+        queryFn: async () => {
+            const res = await api.get('/favorites');
+            return res.data;
+        },
+        enabled: isAuthenticated && user?.role === 'student',
+    });
+
+    const isFavorited = (offreId: number) => favorites.some((f: any) => f.id === offreId);
+
+    const toggleFavoriteMutation = useMutation({
+        mutationFn: async (offreId: number) => {
+            const res = await api.post(`/favorites/${offreId}`);
+            return res.data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['favorites'] });
+        },
+    });
+
+    const handleToggleFavorite = (e: React.MouseEvent, offreId: number) => {
+        e.stopPropagation();
+        if (!isAuthenticated) {
+            navigate(withLocale('/login'));
+            return;
+        }
+        toggleFavoriteMutation.mutate(offreId);
+    };
 
     useEffect(() => {
         const id = window.setInterval(() => setNowTs(Date.now()), 60000);
@@ -162,7 +196,7 @@ export default function ExploreOffres() {
 
     const timeAgo = (date: string) => {
         const diff = Math.floor((nowTs - new Date(date).getTime()) / 1000);
-        if (diff < 60) return locale === 'fr' ? "A l'instant" : 'Just now';  
+        if (diff < 60) return locale === 'fr' ? "A l'instant" : 'Just now';
         if (diff < 3600) return locale === 'fr' ? `Il y a ${Math.floor(diff / 60)} min` : `${Math.floor(diff / 60)} min ago`;
         if (diff < 86400) return locale === 'fr' ? `Il y a ${Math.floor(diff / 3600)}h` : `${Math.floor(diff / 3600)}h ago`;
         return locale === 'fr' ? `Il y a ${Math.floor(diff / 86400)}j` : `${Math.floor(diff / 86400)}d ago`;
@@ -170,7 +204,7 @@ export default function ExploreOffres() {
 
     return (
         <div className="min-h-screen bg-[#09090b] text-white pt-24 pb-12 px-6 overflow-hidden">
-            <div className="max-w-7xl mx-auto space-y-10 relative z-10">     
+            <div className="max-w-7xl mx-auto space-y-10 relative z-10">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
                     {appliedCompanySearch ? (
                         <>
@@ -214,63 +248,63 @@ export default function ExploreOffres() {
                             </button>
                         </div>
                         {isFiltersOpen && (
-                          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex-1 flex flex-col gap-4 pt-2">
-                              <div className="flex flex-col md:flex-row gap-4">
-                                  <div className="flex-1 relative group">
-                                      <Location01Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                      <input type="text" placeholder={locale === 'fr' ? 'Ville / Pays' : 'City / Country'} value={locSearch}
-                                          onChange={e => setLocSearch(e.target.value)}
-                                          className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
-                                      />
-                                  </div>
-                              </div>
-                              <div className="flex flex-col md:flex-row gap-4">
-                                  <div className="flex-[2] relative group">
-                                      <Building04Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                      <input type="text" placeholder={locale === 'fr' ? 'Entreprise...' : 'Company...'} value={companySearch}
-                                          onChange={e => setCompanySearch(e.target.value)}
-                                          className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
-                                      />
-                                  </div>
-                                  <div className="flex-[1] relative group">
-                                      <MoneyBag02Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-                                      <input type="number" placeholder={locale === 'fr' ? 'Salaire min' : 'Min salary'} value={salaryMin}
-                                          onChange={e => setSalaryMin(e.target.value ? Number(e.target.value) : '')}
-                                          className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
-                                      />
-                                  </div>
-                                  <div className="flex-[1] relative group bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl px-4 py-2 flex flex-col justify-center transition-all">
-                                      <div className="flex justify-between items-center py-1">
-                                          <div className="flex items-center gap-2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
-                                              <Target01Icon size={14} />
-                                              <span className="text-[11px] font-medium">{locale === 'fr' ? 'Matching min' : 'Min matching'}</span>
-                                          </div>
-                                          <span className="text-[12px] font-bold text-white">{minMatch || 0}%</span>
-                                      </div>
-                                      <input type="range" min="0" max="100" value={minMatch === '' ? 0 : minMatch}
-                                          onChange={e => setMinMatch(Number(e.target.value))}
-                                          onMouseUp={e => { setAppliedMinMatch(Number((e.target as HTMLInputElement).value)); setPage(1); }}
-                                          onTouchEnd={e => { setAppliedMinMatch(Number((e.target as HTMLInputElement).value)); setPage(1); }}
-                                          className="w-full accent-blue-500"
-                                      />
-                                  </div>
-                              </div>
-                              <div className="flex gap-3 items-center flex-wrap pb-1">      
-                                  {['', 'Remote', 'Hybrid', 'On-site'].map(mode => (   
-                                      <button type="button" key={mode} onClick={() => { setWorkModeFilter(mode); setPage(1); }}
-                                          className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${workModeFilter === mode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.03] text-slate-500 border-white/10 hover:text-white hover:border-white/30'}`}>
-                                          {mode || (locale === 'fr' ? 'Tous Modes' : 'All Modes')}
-                                      </button>
-                                  ))}
-                                  <div className="w-px h-4 bg-white/10 mx-1" />        
-                                  {['', 'CDI', 'CDD', 'Stage', 'Freelance'].map(type => (
-                                      <button type="button" key={type} onClick={() => { setContractFilter(type); setPage(1); }}
-                                          className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${contractFilter === type ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.03] text-slate-500 border-white/10 hover:text-white hover:border-white/30'}`}>
-                                          {type || (locale === 'fr' ? 'Tous Contrats' : 'All Contracts')}
-                                      </button>
-                                  ))}
-                              </div>
-                          </motion.div>
+                            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="flex-1 flex flex-col gap-4 pt-2">
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-1 relative group">
+                                        <Location01Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                        <input type="text" placeholder={locale === 'fr' ? 'Ville / Pays' : 'City / Country'} value={locSearch}
+                                            onChange={e => setLocSearch(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex flex-col md:flex-row gap-4">
+                                    <div className="flex-[2] relative group">
+                                        <Building04Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                        <input type="text" placeholder={locale === 'fr' ? 'Entreprise...' : 'Company...'} value={companySearch}
+                                            onChange={e => setCompanySearch(e.target.value)}
+                                            className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
+                                        />
+                                    </div>
+                                    <div className="flex-[1] relative group">
+                                        <MoneyBag02Icon size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                                        <input type="number" placeholder={locale === 'fr' ? 'Salaire min' : 'Min salary'} value={salaryMin}
+                                            onChange={e => setSalaryMin(e.target.value ? Number(e.target.value) : '')}
+                                            className="w-full pl-11 pr-4 py-3 bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl text-[13px] font-medium text-white focus:outline-none focus:border-blue-500 focus:bg-white/[0.05] transition-all placeholder:text-slate-500 placeholder:font-normal"
+                                        />
+                                    </div>
+                                    <div className="flex-[1] relative group bg-white/[0.03] hover:bg-white/[0.05] border border-white/10 rounded-2xl px-4 py-2 flex flex-col justify-center transition-all">
+                                        <div className="flex justify-between items-center py-1">
+                                            <div className="flex items-center gap-2 text-slate-400 group-focus-within:text-blue-500 transition-colors">
+                                                <Target01Icon size={14} />
+                                                <span className="text-[11px] font-medium">{locale === 'fr' ? 'Matching min' : 'Min matching'}</span>
+                                            </div>
+                                            <span className="text-[12px] font-bold text-white">{minMatch || 0}%</span>
+                                        </div>
+                                        <input type="range" min="0" max="100" value={minMatch === '' ? 0 : minMatch}
+                                            onChange={e => setMinMatch(Number(e.target.value))}
+                                            onMouseUp={e => { setAppliedMinMatch(Number((e.target as HTMLInputElement).value)); setPage(1); }}
+                                            onTouchEnd={e => { setAppliedMinMatch(Number((e.target as HTMLInputElement).value)); setPage(1); }}
+                                            className="w-full accent-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-3 items-center flex-wrap pb-1">
+                                    {['', 'Remote', 'Hybrid', 'On-site'].map(mode => (
+                                        <button type="button" key={mode} onClick={() => { setWorkModeFilter(mode); setPage(1); }}
+                                            className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${workModeFilter === mode ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.03] text-slate-500 border-white/10 hover:text-white hover:border-white/30'}`}>
+                                            {mode || (locale === 'fr' ? 'Tous Modes' : 'All Modes')}
+                                        </button>
+                                    ))}
+                                    <div className="w-px h-4 bg-white/10 mx-1" />
+                                    {['', 'CDI', 'CDD', 'Stage', 'Freelance'].map(type => (
+                                        <button type="button" key={type} onClick={() => { setContractFilter(type); setPage(1); }}
+                                            className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border ${contractFilter === type ? 'bg-blue-600 text-white border-blue-600' : 'bg-white/[0.03] text-slate-500 border-white/10 hover:text-white hover:border-white/30'}`}>
+                                            {type || (locale === 'fr' ? 'Tous Contrats' : 'All Contracts')}
+                                        </button>
+                                    ))}
+                                </div>
+                            </motion.div>
                         )}
                     </form>
                 </motion.div>
@@ -281,10 +315,10 @@ export default function ExploreOffres() {
                     </div>
                 ) : isError || offres.length === 0 ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="flex flex-col items-center justify-center py-20 bg-white/[0.01] border border-white/5 border-dashed rounded-[32px]">   
+                        className="flex flex-col items-center justify-center py-20 bg-white/[0.01] border border-white/5 border-dashed rounded-[32px]">
                         <Briefcase02Icon size={48} className="text-white/20 mb-4" />
                         <h3 className="font-syne font-black uppercase text-xl text-white/50">{isError ? (locale === 'fr' ? 'Erreur de chargement' : 'Loading error') : (locale === 'fr' ? 'Aucune offre trouvee' : 'No offers found')}</h3>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-2">{locale === 'fr' ? "Essayez d'ajuster vos filtres ou revenez plus tard." : 'Try adjusting filters or come back later.'}</p>  
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mt-2">{locale === 'fr' ? "Essayez d'ajuster vos filtres ou revenez plus tard." : 'Try adjusting filters or come back later.'}</p>
                     </motion.div>
                 ) : (
                     <div className="space-y-10">
@@ -304,26 +338,36 @@ export default function ExploreOffres() {
                                             <Briefcase02Icon size={24} className="text-slate-500 group-hover:text-blue-500 transition-colors" />
                                         </div>
                                         {offre.match_percentage !== undefined && offre.match_percentage > 0 && (
-                                            <div className={`px-2 py-1 rounded-xl border flex items-center gap-1 text-[8px] font-black uppercase tracking-widest ${
-                                                offre.match_percentage >= 80 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 
-                                                offre.match_percentage >= 50 ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' : 
-                                                'bg-red-500/10 text-red-500 border-red-500/20'
-                                            }`}>
+                                            <div className={`px-2 py-1 rounded-xl border flex items-center gap-1 text-[8px] font-black uppercase tracking-widest ${offre.match_percentage >= 80 ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                                                offre.match_percentage >= 50 ? 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' :
+                                                    'bg-red-500/10 text-red-500 border-red-500/20'
+                                                }`}>
                                                 <Target01Icon size={10} />
                                                 {offre.match_percentage}% MATCH
                                             </div>
+                                        )}
+                                        {user?.role === 'student' && (
+                                            <button
+                                                onClick={(e) => handleToggleFavorite(e, offre.id)}
+                                                className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all ${isFavorited(offre.id)
+                                                    ? 'bg-red-500/10 border-red-500/20 text-red-500'
+                                                    : 'bg-white/5 border-white/10 text-slate-500 hover:text-red-500 hover:border-red-500/30'
+                                                    }`}
+                                            >
+                                                <FavouriteIcon size={16} />
+                                            </button>
                                         )}
                                     </div>
 
                                     <div className="space-y-4 mb-6 relative z-10">
                                         <div>
                                             <h3 className="text-lg font-black italic uppercase tracking-tight text-white group-hover:text-blue-500 transition-colors line-clamp-1">{offre.title}</h3>
-                                            <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest mt-1 flex items-center gap-1">   
+                                            <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest mt-1 flex items-center gap-1">
                                                 <Building04Icon size={12} />
                                                 {offre.user.company_name || offre.user.name}
                                             </p>
                                         </div>
-                                        
+
                                         <div className="flex flex-wrap gap-2">
                                             <span className="px-2 py-1 bg-white/[0.05] rounded-xl text-[9px] font-black uppercase tracking-widest text-slate-400 border border-white/5">{offre.contract_type}</span>
                                             <span className="px-2 py-1 bg-blue-600/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-blue-500 border border-blue-600/20">{offre.work_mode}</span>
@@ -334,7 +378,7 @@ export default function ExploreOffres() {
                                                 {offre.location && (
                                                     <div className="flex items-center gap-2 text-slate-500">
                                                         <Location01Icon size={12} />
-                                                        <span className="text-[9px] font-bold uppercase tracking-widest">{offre.location}</span>         
+                                                        <span className="text-[9px] font-bold uppercase tracking-widest">{offre.location}</span>
                                                     </div>
                                                 )}
                                                 {formatSalary(offre.salary_min, offre.salary_max) && (
