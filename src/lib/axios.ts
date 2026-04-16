@@ -7,8 +7,12 @@ function normalizeApiBaseUrl(url: string): string {
     return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`;
 }
 
+const defaultApiBaseUrl = import.meta.env.PROD
+    ? 'https://matchedin-backend.free.laravel.cloud'
+    : 'http://localhost:8000';
+
 const apiBaseUrl = normalizeApiBaseUrl(
-    import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000'
+    import.meta.env.VITE_API_BASE_URL ?? defaultApiBaseUrl
 );
 
 const api: AxiosInstance = axios.create({
